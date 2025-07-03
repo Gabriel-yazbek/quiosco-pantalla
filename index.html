@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Ahora Sirviendo</title>
   <style>
     body {
@@ -15,32 +15,16 @@
       align-items: center;
       height: 100vh;
       overflow: hidden;
-    }
-
-    .counter-container {
-      display: flex;
-      gap: 100px;
-    }
-
-    .counter {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
       user-select: none;
+      cursor: pointer;
     }
-
-    h2 {
-      font-size: 2em;
-      margin: 0;
-      opacity: 0.8;
+    .counter {
+      text-align: center;
     }
-
     h1 {
       font-size: 3em;
       margin: 0.3em 0;
     }
-
     .number {
       font-size: 8em;
       font-weight: bold;
@@ -49,18 +33,9 @@
   </style>
 </head>
 <body tabindex="0">
-  <div class="counter-container">
-    <div class="counter" id="menudeo">
-      <h2>11 o menos</h2>
-      <h1>Ahora sirviendo:</h1>
-      <div class="number" id="number-menudeo">1</div>
-    </div>
-
-    <div class="counter" id="mayoreo">
-      <h2>Más</h2>
-      <h1>Ahora sirviendo:</h1>
-      <div class="number" id="number-mayoreo">1</div>
-    </div>
+  <div class="counter" id="counter">
+    <h1>Ahora sirviendo:</h1>
+    <div class="number" id="number">1</div>
   </div>
 
   <!-- Firebase Libraries -->
@@ -68,6 +43,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
+    // Your Firebase configuration (update if needed)
     const firebaseConfig = {
       apiKey: "AIzaSyAiU-noiSvb5OF6OsFKr7H3CKPmKXYR2ws",
       authDomain: "numero-turnos.firebaseapp.com",
@@ -78,57 +54,51 @@
       appId: "1:841522897826:web:0826b4d927e72ba58888fb"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const ref = db.ref("nowServing");
 
-    const paths = {
-      menudeo: db.ref("nowServingMenudeo"),
-      mayoreo: db.ref("nowServingMayoreo")
-    };
+    const display = document.getElementById("number");
 
-    const displays = {
-      menudeo: document.getElementById("number-menudeo"),
-      mayoreo: document.getElementById("number-mayoreo")
-    };
-
-    function updateDisplay(display, value) {
+    function updateDisplay(value) {
       display.style.opacity = 0;
       setTimeout(() => {
-        display.innerText = value;
+        display.textContent = value;
         display.style.opacity = 1;
       }, 150);
     }
 
-    function setupCounter(type) {
-      paths[type].on("value", (snapshot) => {
-        const val = snapshot.val() || 1;
-        updateDisplay(displays[type], val);
-      });
-    }
-
-    function changeCount(type, change) {
-      paths[type].once("value").then(snapshot => {
-        let val = snapshot.val() || 1;
-        val = Math.max(1, val + change);
-        paths[type].set(val);
-      });
-    }
-
-    setupCounter("menudeo");
-    setupCounter("mayoreo");
-
-    // Click behavior
-    document.getElementById("menudeo").addEventListener("click", () => changeCount("menudeo", 1));
-    document.getElementById("mayoreo").addEventListener("click", () => changeCount("mayoreo", 1));
-
-    // Keyboard control
-    document.body.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight") changeCount("menudeo", 1);
-      else if (e.key === "ArrowLeft") changeCount("menudeo", -1);
-      else if (e.key === "ArrowUp") changeCount("mayoreo", 1);
-      else if (e.key === "ArrowDown") changeCount("mayoreo", -1);
+    // Listen for changes and update display live
+    ref.on("value", (snapshot) => {
+      const val = snapshot.val() || 1;
+      updateDisplay(val);
     });
 
+    // Change count by delta (click increments by 1)
+    function changeCount(delta) {
+      ref.once("value").then(snapshot => {
+        let val = snapshot.val() || 1;
+        val = Math.max(1, val + delta);
+        ref.set(val);
+      });
+    }
+
+    // Click anywhere on the number to increment
+    document.getElementById("counter").addEventListener("click", () => {
+      changeCount(1);
+    });
+
+    // Keyboard arrows to increment/decrement
+    document.body.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+        changeCount(1);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+        changeCount(-1);
+      }
+    });
+
+    // Focus body to capture keyboard input immediately
     document.body.focus();
   </script>
 </body>
